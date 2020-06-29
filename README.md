@@ -1,1 +1,117 @@
-# PyOfficeGrep
+PyOfficeGrep
+===
+
+![Software Version](http://img.shields.io/badge/Version-v0.0.1-green.svg?style=flat)
+![Python Version](http://img.shields.io/badge/Python-3.x-blue.svg?style=flat)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+
+<!-- [Japanese Page](./README.md) -->
+
+## Overview
+Run a grep search on the Office files.
+
+## Version
+v0.0.1
+
+## Requirements
+- Python 3.x
+- PyWin32
+- colorama
+
+## License
+MIT License
+
+## Spec and Limitations
+- Currently, only Excel files (xls, xlsx, xlsm) are supported.
+    - I would like to support Word and PowerPoint files (doc, docx, docm, ppt, pptx, pptm) in the future, but this has been put off because we haven't been forced to.
+- To speed up the search for cells in the Excel file, a slight modification was made.
+
+## How to use
+Run `office_grep.py` with arguments.
+
+```
+$ office_grep.py -h
+usage: office_grep.py [-h] [--type TYPE] [--word WORD] [--recursive RECURSIVE]
+                      [--ignorecase IGNORECASE] [--regex REGEX]
+                      [--parallel PARALLEL]
+                      query dirpath
+
+Run a grep search on the Office files.
+
+positional arguments:
+  query                 Search query
+  dirpath               Target directory path
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --type TYPE           Target file types (The following letter combinations:
+                        "E":Excel, "W":Word, "P":PowerPoint)
+  --word WORD           Match whole words only
+  --recursive RECURSIVE
+                        Search the directory recursively
+  --ignorecase IGNORECASE
+                        Case insensitive
+  --regex REGEX         Regex
+  --parallel PARALLEL   Maximum number of parallel processing
+```
+
+### Required parameters
+
+| Parameter | Explanation           | Value Format |
+|-----------|-----------------------|--------------|
+| query     | Search query          | String       |
+| dirpath   | Target directory path | Path string  |
+
+### Optional Parameters
+
+| Parameter  | Explanation                           | Value Format                                                         | Initial Value |
+|------------|---------------------------------------|----------------------------------------------------------------------|---------------|
+| type       | Target file types                     | The following letter combinations:<br/>E:Excel, W:Word, P:PowerPoint | EWP           |
+| word       | Match whole words only                | Boolean (True or False)                                              | False         |
+| recursive  | Search the directory recursively      | Boolean (True or False)                                              | True          |
+| ignorecase | Case insensitive                      | Boolean (True or False)                                              | False         |
+| regex      | Regex                                 | Boolean (True or False)                                              | True          |
+| parallel   | Maximum number of parallel processing | Integer                                                              | 1             |
+
+Note:  
+- parallel
+    - Specify 1 to disable parallel processing.
+    - It becomes impossible to stop by interrupts such as Ctrl+C when parallelized.
+    - Currently, 1 is recommended because the speed improvement cannot be expected even if it is parallelized.
+
+#### How the values are adopted
+The values are adopted in the following order of priority:
+1. Command line arguments.
+2. Configuration file. (`setting.ini` in the current directory.)
+3. Initial value.
+
+
+## Content of results
+
+![result](https://user-images.githubusercontent.com/64964079/86004170-d9f23a00-ba4d-11ea-8abe-0f94258cdd07.png)
+
+### Line in the file path
+A file path is displayed with the current file number and the total number of all files that have been processed.  
+The first character indicates the file type. (E:Excel, W:Word, P:PowerPoint)
+
+### Line in the result
+This is displayed if there are search results for that file.
+
+The first half is information block, about the location of the search result.  
+The second half is the text block, including the before and after of the search results. The tokens found in the search will be highlighted.
+
+The following is a description of the information blocks for each file type.
+
+#### Excel
+| Information Kind | Explanation                             | Conditions to be displayed                     |
+|------------------|-----------------------------------------|------------------------------------------------|
+| Sheet            | Sheet name.                             | Always.                                        |
+| Cell             | Cell address.                           | If the search results exist in the cell value. |
+| Shape            | Shape name.                             | If the search results exist in the shape.      |
+| Comment          | Cell address where the comment was set. | If the search results exist in the comment.    |
+
+#### Word
+WIP
+
+#### PowerPoint
+WIP
