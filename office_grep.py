@@ -222,8 +222,6 @@ def grep_while_destribute(query, target_fpaths):
 
     if _setting.parallel > 1:
         # 並列処理
-        ## 並列化しても速くならないため max_workers=1 とする（Win32comとの相性？）
-
         # ThreadPoolExecutor では chunksize は無効。ProcessPoolExecutor では適切な範囲で大きくするとパフォーマンス向上が見込める。
         with ThreadPoolExecutor(max_workers=_setting.parallel) as executor:
             executor.map(run_grep, querys, target_fpaths, office_types, fnums, fcnts, re_flagss, locks, chunksize=128)
