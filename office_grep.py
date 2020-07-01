@@ -75,6 +75,9 @@ class OfficeType:
 def main():
     global _setting, _office_types
 
+    # Pyinstallerでexe化する場合の考慮
+    multiprocessing.freeze_support()
+
     # 開始時刻
     debug_print('Start time: {}'.format(datetime.datetime.now()))
     debug_print('')
@@ -146,7 +149,7 @@ def load_setting():
 
     # コマンドラインオプション
     parser = argparse.ArgumentParser(description='Run a grep search on the Office files.')
-    parser.add_argument('-V', '--version', action='version', version='PyOfficeGrep ' + VERSION)
+    parser.add_argument('-v', '--version', action='version', version='PyOfficeGrep ' + VERSION)
     parser.add_argument('query', help='Search query')
     parser.add_argument('dirpath', help='Target directory path')
     parser.add_argument('--type', type=str, help='Target file types (The following letter combinations: "E":Excel, "W":Word, "P":PowerPoint)')
