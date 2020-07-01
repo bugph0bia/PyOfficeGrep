@@ -18,7 +18,7 @@ v0.0.2
 - PyWin32
 - colorama
 
-It's all included in Anaconda3.
+It's all included in [Anaconda3](https://www.anaconda.com/).
 
 ## License
 MIT License
