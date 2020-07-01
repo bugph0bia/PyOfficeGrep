@@ -18,6 +18,31 @@ from colorama import Fore, Back, Style
 
 
 #--------------------------
+# 定数
+#--------------------------
+# バージョン
+VERSION = 'v0.0.2'
+
+# デバッグモード
+DEBUG = False
+
+# ログの色設定
+COLOR_FILE = Fore.LIGHTGREEN_EX
+COLOR_HIT_INFO = Fore.CYAN
+COLOR_HIT_POS = Fore.YELLOW
+
+
+#--------------------------
+# グローバル
+#--------------------------
+# 設定値 (load_setting 関数で読み込まれる)
+_setting = None
+
+# Office種類リスト
+_office_types = []
+
+
+#--------------------------
 # クラス
 #--------------------------
 # 設定値
@@ -47,27 +72,6 @@ class OfficeType:
         self.grep_func = grep_func
 
 
-#--------------------------
-# 定数
-#--------------------------
-# デバッグモード
-DEBUG = False
-
-# ログの色設定
-COLOR_FILE = Fore.LIGHTGREEN_EX
-COLOR_HIT_INFO = Fore.CYAN
-COLOR_HIT_POS = Fore.YELLOW
-
-#--------------------------
-# グローバル
-#--------------------------
-# 設定値 (load_setting 関数で読み込まれる)
-_setting = None
-
-# Office種類リスト
-_office_types = []
-
-
 def main():
     global _setting, _office_types
 
@@ -85,9 +89,6 @@ def main():
     # 設定情報を読み込む
     query, dirpath, _setting = load_setting()
 
-    # カレントディレクトリを変更
-    os.chdir(dirpath)
-
     # 対象とするファイルの拡張子リストを作成
     exts = []
     for office_type in _office_types:
@@ -96,6 +97,9 @@ def main():
 
     # 対象ファイルパスのリストを取得
     target_fpaths = create_fpaths(dirpath, exts)
+
+    # カレントディレクトリを変更
+    os.chdir(dirpath)
 
     # 検索処理を振り分けながら実行
     grep_while_destribute(query, target_fpaths)
@@ -142,6 +146,7 @@ def load_setting():
 
     # コマンドラインオプション
     parser = argparse.ArgumentParser(description='Run a grep search on the Office files.')
+    parser.add_argument('-V', '--version', action='version', version='PyOfficeGrep ' + VERSION)
     parser.add_argument('query', help='Search query')
     parser.add_argument('dirpath', help='Target directory path')
     parser.add_argument('--type', type=str, help='Target file types (The following letter combinations: "E":Excel, "W":Word, "P":PowerPoint)')
@@ -192,7 +197,7 @@ def load_setting():
 def create_fpaths(dirpath, exts):
 
     # glob でファイルリストを作成
-    glob_path = dirpath + (r'/**/*.*' if _setting.recursive else r'/*.*')
+    glob_path = os.path.abspath(dirpath) + (r'/**/*.*' if _setting.recursive else r'/*.*')
     fpaths = glob.glob(glob_path, recursive=_setting.recursive)
 
     # ファイル絞り込み用の正規表現パターン
@@ -212,7 +217,7 @@ def grep_while_destribute(query, target_fpaths):
     # Office種類
     office_types = [destribute_by_ext(fpath, _office_types) for fpath in target_fpaths]
     # ファイル番号
-    fnums = [n + 1 for n in range(n)]
+    fnums = [x + 1 for x in range(n)]
     # ファイル総数
     fcnts = [n] * n
     # 正規表現フラグ
@@ -270,7 +275,7 @@ def grep_excel(query, fpath, re_flags):
         app.DisplayAlerts = False
 
         # ブックオープン
-        wb = app.Workbooks.Open(fpath)
+        wb = app.Workbooks.Open(fpath, ReadOnly=True)
 
         # 全シートを処理
         for ws in wb.Worksheets:
@@ -288,7 +293,7 @@ def grep_excel(query, fpath, re_flags):
                 text = str(cell.Value)
                 if re.search(query, text, flags=re_flags):
                     # ヒットログを作成
-                    l = make_log_hit({'Sheet': ws.Name, 'Cell': cell.Address.replace('$', '')}, query, text, re_flags)
+                    l = make_log_hit('Cell', {'Sheet': ws.Name, 'Address': cell.Address.replace('$', '')}, query, text, re_flags)
                     hlogs.append(l)
 
             # 図形
@@ -300,7 +305,7 @@ def grep_excel(query, fpath, re_flags):
                     text = str(shape.TextFrame2.TextRange.Text)
                     if re.search(query, text, flags=re_flags):
                         # ヒットログを作成
-                        l = make_log_hit({'Sheet': ws.Name, 'Shape': shape.Name}, query, text, re_flags)
+                        l = make_log_hit('Shape', {'Sheet': ws.Name, 'Name': shape.Name}, query, text, re_flags)
                         hlogs.append(l)
 
             # コメント
@@ -309,13 +314,13 @@ def grep_excel(query, fpath, re_flags):
                 text = str(comment.Text())
                 if re.search(query, text, flags=re_flags):
                     # ヒットログを作成
-                    l = make_log_hit({'Sheet': ws.Name, 'Comment': comment.Parent.Address.replace('$', '')}, query, text, re_flags)
+                    l = make_log_hit('Comment', {'Sheet': ws.Name, 'Address': comment.Parent.Address.replace('$', '')}, query, text, re_flags)
                     hlogs.append(l)
 
         if wb is not None: wb.Close()
 
     except Exception as e:
-        print('Error: Failer in excel operation.')
+        print('Error: Failer in Excel operation.')
         raise
 
     finally:
@@ -388,7 +393,95 @@ def get_used_range_strict(ws):
 
 # grep: Word
 def grep_word(query, fpath, re_flags):
-    return []
+    hlogs = []
+
+    app = None
+
+    try:
+        # COM初期化  ※スレッドごとに必要
+        pythoncom.CoInitialize()
+
+        # Word起動
+        app = win32com.client.DispatchEx('Word.Application')
+        app.Visible = False
+        app.DisplayAlerts = False
+
+        # ドキュメントオープン
+        doc = app.Documents.Open(fpath, ReadOnly=True)
+
+        # 段落／表
+        for para in doc.Range().Paragraphs:
+            # 段落が表のセルである場合は、cellsプロパティを取得できる
+            try:
+                cell = rng.cells(1)
+            except:
+                cell = None
+
+            # 検索
+            rng = para.Range
+            text = str(rng.Text)
+            if re.search(query, text, flags=re_flags):
+                # ヒットログを作成
+                if cell is None:
+                    # 本文の場合
+                    # 1:wdActiveEndAdjustedPageNumber, 3:wdFirstCharacterLineNumber
+                    l = make_log_hit('Text', {'Page': str(rng.Information(1)), 'Line': str(rng.Information(3))}, query, text, re_flags)
+                    hlogs.append(l)
+                else:
+                    # 表の場合
+                    # 1:wdActiveEndAdjustedPageNumber
+                    l = make_log_hit('Table', {'Page': str(rng.Information(1)), 'Cell': '(r{},c{})'.format(cell.RowIndex, cell.ColumnIndex)}, query, text, re_flags)
+                    hlogs.append(l)
+
+        # # 表
+        # for table in doc.Tables:
+        #     for cell in table.Range.Cells:
+        #         # 検索
+        #         rng = cell.Range
+        #         text = str(rng.Text)
+        #         if re.search(query, text, flags=re_flags):
+        #             # ヒットログを作成
+        #             # 1:wdActiveEndAdjustedPageNumber
+        #             l = make_log_hit('Table', {'Page': str(rng.Information(1)), 'Cell': '(r{},c{})'.format(cell.RowIndex, cell.ColumnIndex)}, query, text, re_flags)
+        #             hlogs.append(l)
+
+        # 図形
+        for shape in doc.Shapes:
+            # 図形種類がオートシェイプ(1:msoAutoShape)またはテキストボックス(17:msoTextBox)であり、
+            # 文字列を持っている場合(線などではない場合)
+            if (shape.Type == 1 or shape.Type == 17) and shape.TextFrame.HasText:
+                # 検索
+                rng = shape.TextFrame.TextRange
+                text = str(rng.Text)
+                if re.search(query, text, flags=re_flags):
+                    # ヒットログを作成
+                    # 1:wdActiveEndAdjustedPageNumber
+                    l = make_log_hit('Shape', {'Page': str(rng.Information(1)), 'Name': shape.Name}, query, text, re_flags)
+                    hlogs.append(l)
+
+        # コメント
+        for comment in doc.Comments:
+            # 検索
+            rng = comment.Range
+            scope = comment.Scope
+            text = str(rng.Text)
+            if re.search(query, text, flags=re_flags):
+                # ヒットログを作成
+                # 1:wdActiveEndAdjustedPageNumber, 3:wdFirstCharacterLineNumber
+                l = make_log_hit('Comment', {'Page': str(scope.Information(1)), 'Line': str(scope.Information(3))}, query, text, re_flags)
+                hlogs.append(l)
+
+        if doc is not None: doc.Close()
+
+    except Exception as e:
+        print('Error: Failer in Word operation.')
+        raise
+
+    finally:
+        # アプリケーションを終了
+        if app is not None: app.Quit()
+
+    return hlogs
 
 
 # grep: PowerPoint
@@ -423,12 +516,12 @@ def make_log_file(n, nmax, fpath, office_type):
 
 
 # 検索ヒットログを出力
-def make_log_hit(info, query, text, re_flags):
+def make_log_hit(kind, info, query, text, re_flags):
 
     # ヒット箇所の情報を作成
-    info = ['{}="{}"'.format(k, v) for k, v in info.items()]
+    info = ['{}={}'.format(k, v) for k, v in info.items()]
     info = ', '.join(info)
-    info = COLOR_HIT_INFO + '{}'.format(info) + Fore.RESET + Back.RESET
+    info = COLOR_HIT_INFO + '{}({})'.format(kind, info) + Fore.RESET + Back.RESET
 
     # 検索にヒットする位置を順に辿りログ出力用の文字列を生成する
     text = text.replace('\n', '')

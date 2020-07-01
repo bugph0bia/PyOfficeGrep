@@ -1,7 +1,7 @@
 PyOfficeGrep
 ===
 
-![Software Version](http://img.shields.io/badge/Version-v0.0.1-green.svg?style=flat)
+![Software Version](http://img.shields.io/badge/Version-v0.0.2-green.svg?style=flat)
 ![Python Version](http://img.shields.io/badge/Python-3.x-blue.svg?style=flat)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
@@ -11,19 +11,22 @@ PyOfficeGrep
 Run a grep search on the Office files.
 
 ## Version
-v0.0.1
+v0.0.2
 
 ## Requirements
 - Python 3.x
 - PyWin32
 - colorama
 
+It's all included in Anaconda3.
+
 ## License
 MIT License
 
 ## Spec and Limitations
-- Currently, only Excel files (xls, xlsx, xlsm) are supported.
-    - I would like to support Word and PowerPoint files (doc, docx, docm, ppt, pptx, pptm) in the future, but this has been put off because we haven't been forced to.
+- Windows only.
+- Currently, only Excel and Word files (xls, xlsx, xlsm, doc, docx, docm) are supported.
+    - I would like to support PowerPoint files (ppt, pptx, pptm) in the future, but this has been put off because we haven't been forced to.
 - To speed up the search for cells in the Excel file, a slight modification was made.
 
 ## How to use
@@ -31,9 +34,9 @@ Run `office_grep.py` with arguments.
 
 ```
 $ office_grep.py -h
-usage: office_grep.py [-h] [--type TYPE] [--word WORD] [--recursive RECURSIVE]
-                      [--ignorecase IGNORECASE] [--regex REGEX]
-                      [--parallel PARALLEL]
+usage: office_grep.py [-h] [-v] [--type TYPE] [--word WORD]
+                      [--recursive RECURSIVE] [--ignorecase IGNORECASE]
+                      [--regex REGEX] [--parallel PARALLEL]
                       query dirpath
 
 Run a grep search on the Office files.
@@ -44,6 +47,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
   --type TYPE           Target file types (The following letter combinations:
                         "E":Excel, "W":Word, "P":PowerPoint)
   --word WORD           Match whole words only
@@ -88,7 +92,7 @@ The values are adopted in the following order of priority:
 
 ## Content of results
 
-![result](https://user-images.githubusercontent.com/64964079/86004170-d9f23a00-ba4d-11ea-8abe-0f94258cdd07.png)
+![result](https://user-images.githubusercontent.com/64964079/86204256-0028ee80-bba2-11ea-8093-1cb48b20acb9.png)
 
 ### Line in the file path
 A file path is displayed with the current file number and the total number of all files that have been processed.  
@@ -103,15 +107,40 @@ The second half is the text block, including the before and after of the search 
 The following is a description of the information blocks for each file type.
 
 #### Excel
-| Information Kind | Explanation                             | Conditions to be displayed                     |
-|------------------|-----------------------------------------|------------------------------------------------|
-| Sheet            | Sheet name.                             | Always.                                        |
-| Cell             | Cell address.                           | If the search results exist in the cell value. |
-| Shape            | Shape name.                             | If the search results exist in the shape.      |
-| Comment          | Cell address where the comment was set. | If the search results exist in the comment.    |
+Kind (front of a parenthesis):
+
+| Kind    |
+|---------|
+| Cell    |
+| Shape   |
+| Comment |
+
+Details (in parentheses):
+
+| Details | Explanation   |
+|---------|---------------|
+| Sheet   | Sheet name.   |
+| Address | Cell address. |
+| Name    | Object name.  |
 
 #### Word
-WIP
+Kind (front of a parenthesis):
+
+| Kind    |
+|---------|
+| Text    |
+| Table   |
+| Shape   |
+| Comment |
+
+Details (in parentheses):
+
+| Details | Explanation                                     |
+|---------|-------------------------------------------------|
+| Page    | Page number.                                    |
+| Line    | Line number in page.                            |
+| Cell    | Position of a cell in the table. (row, column). |
+| Name    | Object name.                                    |
 
 #### PowerPoint
 WIP
