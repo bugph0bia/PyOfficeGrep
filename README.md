@@ -14,11 +14,15 @@ Run a grep search on the Office files.
 v0.0.2
 
 ## Requirements
+### When using `office_grep.py`
 - Python 3.x
 - PyWin32
 - colorama
 
 It's all included in [Anaconda3](https://www.anaconda.com/).
+
+### When using `office_grep.exe`
+Nothing.
 
 ## License
 MIT License
