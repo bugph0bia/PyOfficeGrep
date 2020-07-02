@@ -34,7 +34,7 @@ MIT License
 - To speed up the search for cells in the Excel file, a slight modification was made.
 
 ## How to use
-Run `office_grep.py` with arguments.
+Run `office_grep.py` or `office_grep.exe` with arguments.
 
 ```
 $ office_grep.py -h
