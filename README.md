@@ -37,7 +37,7 @@ MIT License
 Run `office_grep.py` or `office_grep.exe` with arguments.
 
 ```
-$ office_grep.py -h
+$ python office_grep.py -h
 usage: office_grep.py [-h] [-v] [--type TYPE] [--word WORD]
                       [--recursive RECURSIVE] [--ignorecase IGNORECASE]
                       [--regex REGEX] [--parallel PARALLEL]
