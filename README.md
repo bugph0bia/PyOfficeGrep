@@ -5,7 +5,7 @@ PyOfficeGrep
 ![Python Version](http://img.shields.io/badge/Python-3.x-blue.svg?style=flat)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
-<!-- [Japanese Page](./README.md) -->
+[Japanese Page](./README.ja.md)
 
 ## Overview
 Run a grep search on the Office files.
@@ -24,8 +24,11 @@ It's all included in [Anaconda3](https://www.anaconda.com/).
 ### When using `office_grep.exe`
 Nothing.
 
+Note:
+- You need `PyInstaller` to generate an exe file using `to_exe.bat`.
+
 ## License
-MIT License
+[MIT License](./LICENSE)
 
 ## Spec and Limitations
 - Windows only.
